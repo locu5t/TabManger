@@ -227,12 +227,10 @@ if (selector) {
                   title: tab.title || tab.url,
                   url: tab.url,
                   notes: tab.notes || '',
+                  description: tab.description || tab.notes || '',
+                  thumb: tab.thumb || null,
                   favicon: group.favicon,
-                  manualThumb: tab.thumbnail || null,
-                   selectorThumb: tab.selectorThumb || null,
-                   autoThumb: tab.autoThumb || null,
-                   selector: domainSelectors[domain] || null,
-                   isFavorite: favoriteUrls.has(tab.url) // Check if this specific URL is favorited
+                  isFavorite: favoriteUrls.has(tab.url) // Check if this specific URL is favorited
               });
           });
       });
@@ -245,7 +243,7 @@ if (selector) {
           const matchesSearch = item.title.toLowerCase().includes(searchTerm) ||
                                 item.url.toLowerCase().includes(searchTerm) ||
                                 item.domain.toLowerCase().includes(searchTerm) ||
-                                item.notes.toLowerCase().includes(searchTerm);
+                                item.description.toLowerCase().includes(searchTerm);
 
           // Filter by favorite status
           const matchesFilter = filterValue === 'all' || (filterValue === 'favorites' && item.isFavorite);
@@ -261,16 +259,9 @@ if (selector) {
 
       const fragment = document.createDocumentFragment();
       // Use Promise.all to wait for all thumbnail URLs to be fetched
-      const thumbnailPromises = filteredUrls.map(async (item) => {
-          
-let thumb = item.manualThumb ?? item.selectorThumb ?? item.autoThumb;
-if (!thumb && /(youtube\.com|youtu\.be)/.test(item.url)) {
-    const idMatch = item.url.match(/(?:v=|\/)([A-Za-z0-9_-]{11})/);
-    if (idMatch) thumb = `https://img.youtube.com/vi/${idMatch[1]}/hqdefault.jpg`;
-}
-const thumbnailUrl = thumb ?? item.favicon;
-
-          return { ...item, thumbnailUrl }; // Attach the fetched thumbnail URL
+     const thumbnailPromises = filteredUrls.map(async (item) => {
+          const thumbnailUrl = await getThumbnailUrl(item.url, item.favicon, item.thumb, null);
+          return { ...item, thumbnailUrl };
       });
 
       const itemsWithThumbnails = await Promise.all(thumbnailPromises);
@@ -292,28 +283,25 @@ const thumbnailUrl = thumb ?? item.favicon;
 
           // Thumbnail Container
           const thumbnailContainer = document.createElement('div');
-          thumbnailContainer.className = 'thumbnailContainer';
-          thumbnailContainer.addEventListener('click', () => openUrl(item.url)); // Click container to open URL
+          thumbnailContainer.className = 'thumbnail';
+          thumbnailContainer.addEventListener('click', () => openUrl(item.url));
 
           if (item.thumbnailUrl) {
               const img = document.createElement('img');
-              img.className = 'thumbnail';
               img.src = item.thumbnailUrl;
               img.alt = 'Thumbnail';
               img.onerror = () => {
-                  img.onerror = null; // Prevent infinite loop
-                  img.style.display = 'none'; // Hide broken image
-                  // Show placeholder if image fails to load
+                  img.onerror = null;
+                  img.style.display = 'none';
                   thumbnailContainer.innerHTML = '<div class="placeholderIconContainer">' + placeholderIconSvg + '</div>';
               };
               thumbnailContainer.appendChild(img);
           } else {
-              // Show placeholder if no thumbnail URL is available
               thumbnailContainer.innerHTML = '<div class="placeholderIconContainer">' + placeholderIconSvg + '</div>';
           }
           gridItem.appendChild(thumbnailContainer);
 
-          // Content (Title, Domain, Notes)
+          // Content (Title, Domain, Description)
           const contentDiv = document.createElement('div');
           contentDiv.className = 'content';
 
@@ -323,7 +311,7 @@ const thumbnailUrl = thumb ?? item.favicon;
           titleLink.textContent = item.title;
           titleLink.title = `${item.title}\n${item.url}`;
           titleLink.target = "_blank";
-          titleLink.addEventListener('click', (e) => e.stopPropagation()); // Prevent opening via container click
+          titleLink.addEventListener('click', (e) => e.stopPropagation());
 
           const domainSpan = document.createElement('span');
           domainSpan.className = 'domain';
@@ -332,52 +320,105 @@ const thumbnailUrl = thumb ?? item.favicon;
           contentDiv.appendChild(titleLink);
           contentDiv.appendChild(domainSpan);
 
-          // Notes Section
-          const notesSection = document.createElement('div');
-          notesSection.className = 'notes-section';
-          const noteInputWrapper = document.createElement('div');
-          noteInputWrapper.className = 'note-input-wrapper';
-          noteInputWrapper.style.display = item.notes ? 'flex' : 'none'; // Show if notes exist
+          // --- Description Section ---
+          const descSection = document.createElement('div');
+          descSection.className = 'notes-section';
 
-          const noteInput = document.createElement('input');
-          noteInput.type = 'text';
-          noteInput.className = 'url-note';
-          noteInput.placeholder = 'Add a note...';
-          noteInput.value = item.notes;
-          noteInput.dataset.url = item.url; // Link note to URL
+          const descInputWrapper = document.createElement('div');
+          descInputWrapper.className = 'note-input-wrapper';
+          const descInput = document.createElement('textarea');
+          descInput.placeholder = 'Add a description...';
+          descInput.value = item.description || '';
+          const saveDescBtn = document.createElement('button');
+          saveDescBtn.className = 'save-note-btn';
+          saveDescBtn.textContent = 'Save';
+          saveDescBtn.addEventListener('click', () => {
+            saveDescription(item.url, descInput.value);
+            descInputWrapper.style.display = 'none';
+            renderGrid(savedGroupsData);
+          });
+          descInputWrapper.append(descInput, saveDescBtn);
 
-          const saveNoteBtn = document.createElement('button');
-          saveNoteBtn.className = 'save-note-btn';
-          saveNoteBtn.textContent = 'Save';
-          saveNoteBtn.addEventListener('click', handleSaveNote);
-
-          noteInputWrapper.appendChild(noteInput);
-          noteInputWrapper.appendChild(saveNoteBtn);
-          notesSection.appendChild(noteInputWrapper);
-
-          // Add a button to toggle the note input if no note exists yet
-          if (!item.notes) {
-              const addNoteBtn = document.createElement('button');
-              addNoteBtn.textContent = 'Add Note';
-              addNoteBtn.className = 'add-note-btn';
-              addNoteBtn.style.fontSize = '0.8em';
-              addNoteBtn.style.padding = '3px 8px';
-              addNoteBtn.style.marginTop = '5px';
-              addNoteBtn.style.backgroundColor = '#f8f9fa';
-              addNoteBtn.style.color = '#333';
-              addNoteBtn.style.border = '1px solid #ccc';
-              addNoteBtn.style.borderRadius = '3px';
-              addNoteBtn.style.cursor = 'pointer';
-              addNoteBtn.addEventListener('click', () => {
-                  noteInputWrapper.style.display = 'flex';
-                  addNoteBtn.style.display = 'none'; // Hide the "Add Note" button
-                  noteInput.focus();
-              });
-              notesSection.appendChild(addNoteBtn);
+          const descDisplay = document.createElement('div');
+          descDisplay.className = 'note-display';
+          if (item.description) {
+            const p = document.createElement('p');
+            p.className = 'note-text';
+            p.textContent = item.description;
+            const editBtn = document.createElement('button');
+            editBtn.className = 'edit-note-btn';
+            editBtn.textContent = 'Edit';
+            editBtn.addEventListener('click', () => {
+              descInputWrapper.style.display = 'flex';
+              descInput.focus();
+            });
+            descDisplay.append(p, editBtn);
+          } else {
+            const addBtn = document.createElement('button');
+            addBtn.className = 'add-note-btn';
+            addBtn.textContent = 'Add Description';
+            addBtn.addEventListener('click', () => {
+              descInputWrapper.style.display = 'flex';
+              descInput.focus();
+            });
+            descDisplay.append(addBtn);
           }
 
-          contentDiv.appendChild(notesSection);
+          descSection.append(descInputWrapper, descDisplay);
+          contentDiv.appendChild(descSection);
           gridItem.appendChild(contentDiv);
+
+          const pickWrap = document.createElement('div');
+          pickWrap.className = 'pick-controls';
+
+          const pickBtn = document.createElement('button');
+          pickBtn.textContent = 'Pick';
+          pickBtn.title = 'Pick from page';
+          const pickMenu = document.createElement('div');
+          pickMenu.className = 'pick-menu';
+          pickMenu.style.display = 'none';
+
+          function requestPick(mode, saveAsDefault){
+            pickMenu.style.display = 'none';
+            chrome.runtime.sendMessage({
+              type: 'START_PICK_FOR_URL',
+              url: item.url,
+              mode,
+              saveAsDomainDefault: saveAsDefault
+            }, (res) => {
+              if (res?.ok) {
+                chrome.storage.local.get(['savedGroups'], (data) => {
+                  savedGroupsData = data.savedGroups || {};
+                  renderGrid(savedGroupsData);
+                });
+              }
+            });
+          }
+
+          const pickThumb = document.createElement('button');
+          pickThumb.textContent = 'Thumbnail…';
+          pickThumb.addEventListener('click', ()=> requestPick('image', false));
+
+          const pickDesc = document.createElement('button');
+          pickDesc.textContent = 'Description…';
+          pickDesc.addEventListener('click', ()=> requestPick('text', false));
+
+          const pickThumbDefault = document.createElement('button');
+          pickThumbDefault.textContent = 'Thumb + Save Domain Default';
+          pickThumbDefault.addEventListener('click', ()=> requestPick('image', true));
+
+          const pickDescDefault = document.createElement('button');
+          pickDescDefault.textContent = 'Desc + Save Domain Default';
+          pickDescDefault.addEventListener('click', ()=> requestPick('text', true));
+
+          pickMenu.append(pickThumb, pickDesc, pickThumbDefault, pickDescDefault);
+          pickBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            pickMenu.style.display = pickMenu.style.display === 'none' ? 'block' : 'none';
+          });
+
+          pickWrap.append(pickBtn, pickMenu);
+          gridItem.appendChild(pickWrap);
 
           // Action Buttons (Favorite, Delete)
           const actionsDiv = document.createElement('div');
@@ -433,77 +474,19 @@ const thumbnailUrl = thumb ?? item.favicon;
       bulkDeleteBtn.style.display = 'block'; // Ensure button is visible if there are items
   }
 
-  function handleSaveNote(event) {
-      const button = event.target;
-      const inputWrapper = button.closest('.note-input-wrapper');
-      const noteInput = inputWrapper.querySelector('.url-note');
-      const url = noteInput.dataset.url;
-      const noteText = noteInput.value.trim();
-
-      // Update local data
-      let groupDomain = null;
-      let tabIndex = -1;
-      for (const domain in savedGroupsData) {
-          tabIndex = savedGroupsData[domain].tabs.findIndex(tab => tab.url === url);
-          if (tabIndex !== -1) {
-              groupDomain = domain;
-              savedGroupsData[domain].tabs[tabIndex].notes = noteText;
-              break;
-          }
-      }
-
-      if (groupDomain) {
-          // Update storage
-          chrome.storage.local.set({ savedGroups: savedGroupsData }, () => {
-              console.log(`Note saved for ${url}: "${noteText}"`);
-              // Update UI: hide input, show note if text exists, or hide note section if empty
-              const gridItem = button.closest('.gridItem');
-              const notesSection = gridItem.querySelector('.notes-section');
-              const noteDisplay = notesSection.querySelector('.url-note-display');
-
-              if (noteText) {
-                  if (!noteDisplay) { // If note display span doesn't exist, create it
-                      const newNoteDisplay = document.createElement('span');
-                      newNoteDisplay.className = 'url-note-display';
-                      newNoteDisplay.textContent = noteText;
-                      newNoteDisplay.title = `Note: ${noteText}`;
-                      notesSection.prepend(newNoteDisplay); // Add before input wrapper
-                  } else {
-                      noteDisplay.textContent = noteText;
-                      noteDisplay.title = `Note: ${noteText}`;
-                      noteDisplay.style.display = 'inline'; // Ensure it's visible
-                  }
-                  inputWrapper.style.display = 'none'; // Hide input
-                  notesSection.querySelector('.add-note-btn')?.remove(); // Remove "Add Note" button if it exists
-              } else {
-                  // Note is empty, hide the input and the entire notes section
-                  inputWrapper.style.display = 'none';
-                  notesSection.style.display = 'none';
-                  // If "Add Note" button was hidden, show it again
-                  if (!notesSection.querySelector('.add-note-btn')) {
-                      const addNoteBtn = document.createElement('button');
-                      addNoteBtn.textContent = 'Add Note';
-                      addNoteBtn.className = 'add-note-btn';
-                      addNoteBtn.style.fontSize = '0.8em';
-                      addNoteBtn.style.padding = '3px 8px';
-                      addNoteBtn.style.marginTop = '5px';
-                      addNoteBtn.style.backgroundColor = '#f8f9fa';
-                      addNoteBtn.style.color = '#333';
-                      addNoteBtn.style.border = '1px solid #ccc';
-                      addNoteBtn.style.borderRadius = '3px';
-                      addNoteBtn.style.cursor = 'pointer';
-                      addNoteBtn.addEventListener('click', () => {
-                          inputWrapper.style.display = 'flex';
-                          addNoteBtn.style.display = 'none';
-                          noteInput.focus();
-                      });
-                      notesSection.appendChild(addNoteBtn);
-                  }
+  function saveDescription(url, description) {
+      chrome.storage.local.get(['savedGroups'], (data) => {
+          const savedGroups = data.savedGroups || {};
+          for (const domain in savedGroups) {
+              const group = savedGroups[domain];
+              const rec = group.tabs.find(t => t.url === url);
+              if (rec) {
+                  rec.description = (description || '').slice(0, 1200);
+                  chrome.storage.local.set({ savedGroups }, () => {});
+                  return;
               }
-          });
-      } else {
-          console.error("Could not find URL to save note:", url);
-      }
+          }
+      });
   }
 
   function deleteUrl(urlToDelete) {

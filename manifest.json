@@ -6,7 +6,9 @@
   "permissions": [
     "storage",
     "tabs",
-    "contextMenus"
+    "scripting",
+    "contextMenus",
+    "activeTab"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -33,7 +35,8 @@
         "fullscreen.css",
         "icons.js",
         "popup.js",
-        "fullscreen.js"
+        "fullscreen.js",
+        "selector/picker.js"
       ],
       "matches": [
         "<all_urls>"
