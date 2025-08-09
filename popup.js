@@ -91,7 +91,9 @@ document.addEventListener('DOMContentLoaded', () => {
                   title: tab.title || tab.url,
                   url: tab.url,
                   notes: '' ,
-                   thumbnail: domainThumbs[domain] || null// Initialize notes field
+                  thumbnail: domainThumbs[domain] || null,
+                  thumb: null,
+                  description: ''
               });
           }
           // Update favicon if current tab has one and group doesn't, or if it's different

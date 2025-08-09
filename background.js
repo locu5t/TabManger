@@ -14,6 +14,45 @@ function getDomainFromUrl(url) {
   }
 }
 
+// Additional helpers for picker and domain rules
+function getHost(url){
+  try { return new URL(url).hostname; } catch { return null; }
+}
+async function getRules(){
+  return new Promise(r=>chrome.storage.local.get(['thumbnailRules'], d=>r(d.thumbnailRules||{})));
+}
+async function setRules(rules){
+  return new Promise(r=>chrome.storage.local.set({ thumbnailRules: rules }, r));
+}
+
+async function applyRuleInTab(tabId, rule) {
+  if (!rule) return { imageSrc:null, text:null };
+  const [{ result } = {}] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (rule) => {
+      function q(sel){ try { return document.querySelector(sel); } catch { return null; } }
+      const out = { imageSrc:null, text:null };
+      if (rule.imageSelector) {
+        const el = q(rule.imageSelector);
+        const img = el && (el.tagName === 'IMG' ? el : el.querySelector('img'));
+        out.imageSrc = img ? (img.currentSrc || img.src || null) : null;
+      }
+      if (rule.textSelector) {
+        const el = q(rule.textSelector);
+        if (el) {
+          const clone = el.cloneNode(true);
+          clone.querySelectorAll('script,style,noscript,svg,canvas,video,audio,iframe,input,select,textarea').forEach(n=>n.remove());
+          clone.querySelectorAll('br').forEach(br=>br.replaceWith('\n'));
+          out.text = (clone.textContent||'').replace(/\s+\n/g,'\n').replace(/\n{3,}/g,'\n\n').trim();
+        }
+      }
+      return out;
+    },
+    args: [rule]
+  });
+  return result || { imageSrc:null, text:null };
+}
+
 // Function to add a single tab to saved groups
 function addTabToSavedGroups(tabInfo, callback) {
   if (!tabInfo || !tabInfo.url || !tabInfo.id) {
@@ -40,9 +79,11 @@ function addTabToSavedGroups(tabInfo, callback) {
       id: tabInfo.id,
       title: tabInfo.title || tabInfo.url, // Use URL as fallback title
       url: tabInfo.url,
-          thumbnail: domainThumbs[domain] || null,
+      thumbnail: domainThumbs[domain] || null,
       selectorThumb: null,
       autoThumb: null,
+      thumb: null,
+      description: ''
       };
 
     if (!savedGroups[domain]) {
@@ -69,6 +110,20 @@ function addTabToSavedGroups(tabInfo, callback) {
          return;
       }
     }
+
+    // attempt to auto-fill thumbnail/description based on domain rule
+    (async () => {
+      const rules = await getRules();
+      const rule = rules[domain];
+      if (rule && tabInfo.id) {
+        try {
+          const data = await applyRuleInTab(tabInfo.id, rule);
+          if (data.imageSrc) newTab.thumb = data.imageSrc;
+          if (data.text) newTab.description = data.text.slice(0, 1200);
+          chrome.storage.local.set({ savedGroups });
+        } catch(e){ console.warn('Auto rule failed', e); }
+      }
+    })();
 
     chrome.storage.local.set({ savedGroups: savedGroups }, () => {
       console.log("Tab saved:", newTab.url);
@@ -158,6 +213,73 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
             }
         });
     }
+});
+
+// === Picker Orchestration ===
+async function ensureTabForUrl(url) {
+  const tabs = await chrome.tabs.query({});
+  const found = tabs.find(t => t.url === url);
+  if (found) return found;
+  return await new Promise(resolve => {
+    chrome.tabs.create({ url, active: true }, (tab) => {
+      const id = tab.id;
+      const listener = (tabId, info) => {
+        if (tabId === id && info.status === 'complete') {
+          chrome.tabs.onUpdated.removeListener(listener);
+          resolve(tab);
+        }
+      };
+      chrome.tabs.onUpdated.addListener(listener);
+    });
+  });
+}
+function uid(){ return Math.random().toString(36).slice(2); }
+
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type === 'START_PICK_FOR_URL') {
+    (async () => {
+      const { url, mode, saveAsDomainDefault } = msg;
+      const requestId = uid();
+      const tab = await ensureTabForUrl(url);
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['selector/picker.js']
+      });
+      chrome.tabs.sendMessage(tab.id, { type: 'PICKER_INIT', mode, requestId });
+
+      const onReply = async (reply) => {
+        if (reply?.type === 'PICKER_DONE' && reply.requestId === requestId) {
+          chrome.runtime.onMessage.removeListener(onReply);
+          const domain = getHost(url);
+          chrome.storage.local.get(['savedGroups','thumbnailRules'], (data) => {
+            const savedGroups = data.savedGroups || {};
+            const rules = data.thumbnailRules || {};
+            if (domain && savedGroups[domain]?.tabs) {
+              const rec = savedGroups[domain].tabs.find(t => t.url === url);
+              if (rec) {
+                if (reply.mode === 'image' && reply.imageSrc) rec.thumb = reply.imageSrc;
+                if (reply.mode === 'text' && reply.text) rec.description = reply.text.slice(0, 1200);
+              }
+            }
+            if (domain && saveAsDomainDefault) {
+              const rule = rules[domain] || {};
+              if (reply.mode === 'image') rule.imageSelector = reply.selector;
+              if (reply.mode === 'text') rule.textSelector = reply.selector;
+              rules[domain] = rule;
+            }
+            chrome.storage.local.set({ savedGroups, thumbnailRules: rules }, () => {
+              sendResponse({ ok: true, data: reply });
+            });
+          });
+        } else if (reply?.type === 'PICKER_CANCEL' && reply.requestId === requestId) {
+          chrome.runtime.onMessage.removeListener(onReply);
+          sendResponse({ ok:false, cancelled:true });
+        }
+      };
+      chrome.runtime.onMessage.addListener(onReply);
+    })();
+    return true; // keep sendResponse alive
+  }
 });
 
 console.log("Tab Organizer: Background script loaded.");
