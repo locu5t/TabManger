@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Tab Organizer - Full View</title>
+  <link rel="stylesheet" href="fullscreen.css">
+</head>
+<body>
+  <div class="header">
+    <h1>Saved URLs</h1>
+    <div class="controls">
+        <input type="search" id="fullSearchInput" placeholder="Search titles, URLs, domains..." title="Filter saved URLs">
+        <select id="fullFilterSelect" title="Filter by favorite status">
+            <option value="all">Show: All</option>
+            <option value="favorites">Show: Favorites Only</option>
+        </select>
+    </div>
+  </div>
+  <div id="urlGridContainer">
+    <div id="urlGrid">
+      <!-- Grid items will be dynamically inserted here -->
+       <p class="message">Loading saved URLs...</p>
+    </div>
+    <div class="bulk-delete-container" style="display: none;">
+        <button id="bulkDeleteBtn" class="danger-btn" disabled>Delete Selected</button>
+    </div>
+  </div>
+  <script src="icons.js"></script> <!-- Load SVG generator first -->
+  <script src="fullscreen.js"></script>
+</body>
+</html>

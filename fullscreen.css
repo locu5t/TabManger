@@ -1,0 +1,313 @@
+body {
+  font-family: Segoe UI, system-ui, Arial, sans-serif;
+  margin: 0;
+  padding: 25px;
+  background-color: #f4f6f8;
+  color: #333;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #333;
+}
+
+.header h1 {
+    margin: 0 0 15px 0;
+    font-weight: 600;
+    color: #1e3a56; /* Darker blue for heading */
+}
+
+.header .controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+}
+
+.header .controls input[type="search"],
+.header .controls select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 200px;
+}
+
+.header .controls input[type="search"] {
+    flex-grow: 1; /* Allow search to take more space */
+    max-width: 400px;
+}
+
+#urlGridContainer {
+  max-width: 1800px; /* Wider max width for full screen */
+  margin: 0 auto;
+}
+
+#urlGrid {
+  display: grid;
+  /* Responsive grid: Adjust minmax width as needed */
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 25px; /* Spacing between grid items */
+}
+
+/* Loading/Empty Message */
+#urlGrid .message {
+    grid-column: 1 / -1; /* Span across all columns */
+    text-align: center;
+    color: #666;
+    padding: 50px 20px;
+    font-style: italic;
+    font-size: 1.1em;
+}
+
+
+.gridItem {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative; /* For positioning buttons */
+  box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+.gridItem:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.12);
+}
+
+.gridItem .thumbnailContainer {
+    width: 100%;
+    height: 160px; /* Thumbnail height */
+    overflow: hidden;
+    background-color: #eee; /* Placeholder bg */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative; /* For overlay effects if needed */
+}
+
+.gridItem img.thumbnail {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Cover the container, cropping if necessary */
+  display: block;
+  transition: transform 0.3s ease-in-out;
+}
+
+.gridItem .thumbnailContainer:hover img.thumbnail {
+    transform: scale(1.08);
+}
+
+.gridItem .placeholderIconContainer { /* Use a container for SVG */
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #eee;
+}
+.gridItem .placeholderIconContainer svg {
+    width: 56px; /* Larger placeholder */
+    height: 56px;
+    opacity: 0.5;
+}
+
+
+.gridItem .content {
+  padding: 12px 15px;
+  flex-grow: 1; /* Takes remaining space */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Pushes domain to bottom */
+  min-height: 80px; /* Ensure minimum content height */
+}
+
+.gridItem .title {
+  font-size: 0.95em;
+  font-weight: 600;
+  color: #222;
+  margin: 0 0 8px 0;
+  line-height: 1.4;
+  /* Limit title lines */
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* Limit to 2 lines */
+  -webkit-box-orient: vertical;
+  min-height: 2.8em; /* Reserve space for 2 lines (1.4 * 2) */
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+.gridItem .title:hover {
+    color: #007bff;
+}
+
+
+.gridItem .domain {
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 8px;
+    word-break: break-all;
+}
+
+/* Notes Section */
+.gridItem .notes-section {
+    margin-top: 10px;
+    font-size: 0.85em;
+    color: #555;
+    font-style: italic;
+    border-top: 1px solid #eee;
+    padding-top: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.gridItem .notes-section .note-input-wrapper {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+.gridItem .notes-section input[type="text"] {
+    flex-grow: 1;
+    padding: 5px 8px;
+    font-size: 0.8em;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.gridItem .notes-section .save-note-btn {
+    padding: 5px 10px;
+    font-size: 0.8em;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+.gridItem .notes-section .save-note-btn:hover {
+    background-color: #0056b3;
+}
+
+
+.gridItem .actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+    z-index: 10; /* Ensure buttons are above thumbnail */
+}
+
+.gridItem button {
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border: none;
+  border-radius: 50%; /* Circular buttons */
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1; /* Adjusted for flex centering */
+  text-align: center;
+  padding: 0;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  display: flex; /* Use flex to center SVG */
+  align-items: center;
+  justify-content: center;
+}
+
+.gridItem button:hover {
+  background: rgba(0, 0, 0, 0.8);
+  transform: scale(1.1);
+}
+
+.gridItem button.deleteBtn:hover {
+  background: #dc3545; /* Red hover for delete */
+}
+
+/* Favorite Button Styling */
+.gridItem button.favoriteBtn {
+    /* Default state (unfavorited) */
+    color: #aaa; /* Default gray for unfavorited star */
+    background: rgba(0, 0, 0, 0.6);
+}
+
+.gridItem button.favoriteBtn:hover {
+    background: rgba(0, 0, 0, 0.8);
+}
+
+/* Style for the star SVG itself */
+.gridItem button.favoriteBtn svg {
+    width: 1em;
+    height: 1em;
+    fill: currentColor; /* Inherit color from button */
+}
+
+/* Style for the star when it's favorited */
+.gridItem button.favoriteBtn.isFavorite {
+    /* When favorited, change the button's color */
+    color: #FFD700; /* Gold color for the star */
+}
+
+
+/* Style for the SVG icons within buttons */
+.gridItem button svg {
+    vertical-align: middle;
+    fill: currentColor; /* Inherit color from button text */
+}
+
+.gridItem button.deleteBtn svg {
+    width: 0.9em; /* Adjust size as needed */
+    height: 0.9em;
+}
+
+/* Checkbox for bulk selection */
+.gridItem .bulk-select {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 10;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+/* Bulk Delete Button */
+.bulk-delete-container {
+    text-align: center;
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+}
+
+.bulk-delete-container button {
+    background-color: #dc3545;
+    padding: 10px 20px;
+    font-size: 1em;
+    border-radius: 5px;
+    min-width: 180px;
+}
+.bulk-delete-container button:hover {
+    background-color: #c82333;
+}
+.bulk-delete-container button:disabled {
+    background-color: #aaa;
+    cursor: not-allowed;
+}
+
+
+.gridItem.hidden { /* Class to hide items during filtering */
+    display: none;
+}
+
+/* Thumbnail uniform sizing */
+.thumbnail{width:100%;height:100%;object-fit:cover;aspect-ratio:16/9;background:#eee;}
+
+/* Bulk delete styles */
+button.danger{background:#d9534f;color:#fff;border:none;padding:6px 12px;border-radius:4px;cursor:pointer;}button.danger:disabled{opacity:.4;cursor:not-allowed;}.tile-checkbox{position:absolute;top:6px;left:6px;transform:scale(1.3);}.thumbnail{width:100%;height:100%;object-fit:cover;aspect-ratio:16/9;background:#eee;}

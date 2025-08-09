@@ -1,0 +1,347 @@
+body {
+  font-family: Segoe UI, system-ui, Arial, sans-serif;
+  margin: 0;
+  padding: 10px 15px;
+  background: #f4f6f8;
+  min-height: 150px; /* Ensure minimum height even when empty */
+  /* Dynamic width will be set by JS based on grid selection */
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  max-height: 550px; /* Limit popup height */
+  overflow: hidden; /* Prevent body scroll, allow groupsContainer scroll */
+}
+
+/* Control Row Layout */
+.controls-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+#gridSelect,
+#sortSelect {
+  flex-grow: 1; /* Make selects share space */
+}
+
+/* Inputs and Buttons */
+#gridSelect,
+#sortSelect,
+#search,
+button {
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box; /* Include padding/border in width */
+  font-size: 13px;
+  background-color: #fff;
+}
+
+#search {
+  margin-bottom: 10px;
+}
+
+/* Button Groups for Better Layout */
+.button-group {
+    display: flex;
+    gap: 10px; /* Space between buttons in a group */
+    margin-bottom: 10px;
+}
+
+.button-group button {
+    flex: 1; /* Make buttons in a group share width */
+    margin-bottom: 0; /* Remove bottom margin as group handles it */
+}
+
+
+button {
+  background: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  text-align: center;
+}
+
+button:hover {
+  background: #0056b3;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+button:active {
+  background: #004085;
+}
+
+button:disabled {
+    background-color: #aaa;
+    cursor: not-allowed;
+}
+
+
+/* Danger Button Style */
+button.danger-btn {
+    background-color: #dc3545;
+}
+button.danger-btn:hover {
+    background-color: #c82333;
+}
+button.danger-btn:active {
+    background-color: #a71d2a;
+}
+button.danger-btn:disabled {
+    background-color: #e88891;
+    cursor: not-allowed;
+}
+
+
+/* Groups Container */
+#groupsContainer {
+  flex-grow: 1; /* Takes remaining vertical space */
+  overflow-y: auto; /* Enable vertical scroll ONLY for this container */
+  overflow-x: hidden; /* Hide horizontal overflow */
+  border: 1px solid #e0e0e0;
+  background-color: #fff;
+  border-radius: 4px;
+  padding: 5px; /* Padding inside the scrollable area */
+  min-height: 100px; /* Ensure it doesn't collapse completely */
+}
+
+/* Loading/Empty Message */
+#groupsContainer .message {
+    text-align: center;
+    color: #666;
+    padding: 30px 10px;
+    font-style: italic;
+}
+
+
+/* Grid Layout Classes */
+#groupsContainer.grid-1x1 { display: grid; grid-template-columns: 1fr; gap: 8px; }
+#groupsContainer.grid-2x2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+#groupsContainer.grid-3x3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+#groupsContainer.grid-4x4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+
+/* Individual Domain Group */
+.domainGroup {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  overflow: hidden; /* Important for border-radius */
+  display: flex;
+  flex-direction: column; /* Stack header and list */
+  margin: 0; /* Grid gap handles spacing */
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.domainHeader {
+  background: #e9ecef; /* Lighter header background */
+  color: #333;
+  padding: 8px 10px;
+  cursor: default; /* Header itself isn't clickable */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #ddd;
+  gap: 5px; /* Space between header items */
+}
+
+.domainHeader .header-content {
+    display: flex;
+    align-items: center;
+    gap: 8px; /* Space between icon, star, text */
+    flex-grow: 1; /* Allow text to take space */
+    overflow: hidden; /* Prevent long domains from breaking layout */
+}
+
+.domainHeader img.favicon {
+  width: 16px;
+  height: 16px;
+  vertical-align: middle;
+  flex-shrink: 0; /* Prevent icon shrinking */
+  object-fit: contain; /* Prevent distortion if not square */
+}
+
+.domainHeader .domain-name {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Add ... for long names */
+}
+
+
+.domainHeader .action-icons {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0; /* Prevent buttons shrinking */
+    gap: 4px;
+}
+
+/* Star Button */
+.domainHeader .starBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: #aaa; /* Default empty star color */
+  font-size: 18px; /* Make star slightly larger */
+  line-height: 1;
+  transition: color 0.2s ease, transform 0.2s ease;
+   display: flex; /* Align SVG nicely */
+   align-items: center;
+   justify-content: center;
+}
+
+.domainHeader .starBtn.isFavorite {
+  /* Color handled by SVG fill */
+}
+
+.domainHeader .starBtn:hover {
+    transform: scale(1.2);
+}
+
+/* Group Delete Button */
+.domainHeader .deleteGroupBtn {
+  background: none;
+  border: none;
+  color: #6c757d; /* Muted color */
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px;
+  line-height: 1;
+  transition: color 0.2s ease;
+  display: flex; /* Align SVG nicely */
+  align-items: center;
+  justify-content: center;
+}
+
+.domainHeader .deleteGroupBtn:hover {
+  color: #dc3545; /* Red hover */
+}
+
+/* Domain Group List */
+.domainGroup ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  max-height: 200px; /* Limit list height within group */
+  overflow-y: auto; /* Scroll if many URLs */
+}
+
+.domainGroup li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid #eee;
+  font-size: 12px;
+  flex-wrap: wrap; /* Allow wrapping for notes */
+}
+
+.domainGroup li:last-child {
+  border-bottom: none;
+}
+
+.domainGroup li .url-info {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1; /* Take available space */
+    margin-right: 8px; /* Space between link/notes and delete button */
+    overflow: hidden; /* Prevent content overflow */
+}
+
+.domainGroup li a {
+  color: #007bff;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* Add ... for long names */
+  display: block; /* Ensure it takes full width of url-info */
+  margin-bottom: 4px; /* Space between link and meta */
+}
+
+.domainGroup li a:hover {
+  text-decoration: underline;
+}
+
+.domainGroup li .url-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85em;
+    color: #666;
+    gap: 8px; /* Space between domain and note */
+    flex-wrap: wrap; /* Allow meta elements to wrap */
+}
+
+.domainGroup li .domain-small {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-shrink: 0; /* Prevent domain from shrinking */
+}
+
+.domainGroup li .url-note-display {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-style: italic;
+    color: #555;
+    max-width: 60%; /* Limit note width to prevent overflow */
+    flex-shrink: 1; /* Allow note to shrink */
+}
+
+
+/* URL Delete Button */
+.domainGroup li button.deleteUrlBtn {
+  background: none; /* Remove background */
+  border: none;
+  color: #6c757d; /* Muted color like group delete */
+  padding: 0; /* Remove padding */
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
+  flex-shrink: 0; /* Prevent shrinking */
+  transition: color 0.2s ease;
+  width: 16px; /* Explicit size */
+  height: 16px;
+  display: flex; /* Align SVG nicely */
+  align-items: center;
+  justify-content: center;
+}
+
+.domainGroup li button.deleteUrlBtn:hover {
+  color: #dc3545; /* Red hover */
+}
+
+/* SVG Icons within buttons */
+button svg {
+    /* Width/height set in JS or specific classes */
+    vertical-align: middle;
+    fill: currentColor; /* Inherit color from button text */
+}
+
+.domainHeader .deleteGroupBtn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.domainGroup li button.deleteUrlBtn svg {
+    width: 12px; /* Smaller X for URL delete */
+    height: 12px;
+}
+
+/* Thumbnail Manager Styles */
+.domain-thumb-preview{width:20px;height:20px;border-radius:4px;margin-right:6px;object-fit:cover;}
+.editThumbBtn{background:none;border:none;cursor:pointer;padding:0 4px;font-size:14px;}
+.thumb-input-wrapper{display:flex;gap:4px;margin-top:4px;}
+.thumb-input-wrapper input{flex:1;padding:4px 6px;font-size:11px;}
+.thumb-save-btn{background:#6c757d;color:#fff;border:none;font-size:11px;padding:2px 6px;border-radius:3px;cursor:pointer;}
+
+/* Thumbnail uniform sizing */
+.thumbnail{width:100%;height:100%;object-fit:cover;aspect-ratio:16/9;background:#eee;}

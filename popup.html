@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Tab Organizer</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <div class="controls-row">
+      <select id="gridSelect" title="Select popup grid layout">
+        <option value="1x1">Grid: 1x1</option>
+        <option value="2x2">Grid: 2x2</option>
+        <option value="3x3">Grid: 3x3</option>
+        <option value="4x4">Grid: 4x4</option>
+      </select>
+      <select id="sortSelect" title="Select sorting order for groups">
+        <option value="most">Sort: Most URLs</option>
+        <option value="alphabetical">Sort: Alphabetical</option>
+        <option value="favorites">Sort: Favorites</option>
+      </select>
+    </div>
+
+    <input type="search" id="search" placeholder="Search domains, titles, URLs..." title="Filter saved groups"/>
+
+    <div class="button-group">
+        <button id="addCurrentBtn" title="Add tabs from this window to the saved list (non-destructive)">Add Window Tabs</button>
+        <button id="moveAllBtn" title="Save tabs from this window and close them (except the first one)">Move Window Tabs</button>
+    </div>
+     <div class="button-group">
+        <button id="fullViewBtn" title="Open a full-screen view of all saved URLs">Full View</button>
+        <button id="clearAndLoadBtn" class="danger-btn" title="Delete ALL saved groups and replace with tabs from this window">Clear Saved & Load Window</button>
+     </div>
+
+    <div id="groupsContainer" class="grid-1x1">
+        <!-- Groups will be loaded here -->
+        <p class="message">Loading...</p>
+    </div>
+  </div>
+  <script src="icons.js"></script> <!-- Load SVG generator first -->
+  <script src="popup.js"></script>
+</body>
+</html>
